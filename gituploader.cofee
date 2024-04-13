@@ -1,0 +1,54 @@
+access_token = 'your_access_token_here'
+headers =
+  Authorization: "token #{access_token}"
+  'Content-Type': 'application/vnd.github.v3+json'
+
+uploadFile = (repoName, filePath, commitMessage) ->
+  with open filePath, 'rb' as file
+    data =
+      message: commitMessage
+      content: file.read().toString('base64').strip()
+
+    url = "https://api.github.com/repos/#{repoName}/contents/#{filePath}"
+    response = requests.put url, headers: headers, data: JSON.stringify(data)
+
+    if response.statusCode is 201
+      console.log 'File uploaded successfully'
+    else
+      console.log 'Failed to upload file'
+
+createDirectory = (repoName, directoryPath, commitMessage) ->
+  url = "https://api.github.com/repos/#{repoName}/contents/#{directoryPath}"
+  data =
+    message: commitMessage
+    content: ''
+
+  response = requests.put url, headers: headers, data: JSON.stringify(data)
+
+  if response.statusCode is 201
+    console.log 'Directory created successfully'
+  else
+    console.log 'Failed to create directory'
+
+deleteFileOrDirectory = (repoName, filePath, commitMessage) ->
+  url = "https://api.github.com/repos/#{repoName}/contents/#{filePath}"
+  data =
+    message: commitMessage
+    sha: getFileSha(repoName, filePath)
+
+  response = requests.delete url, headers: headers, data: JSON.stringify(data)
+
+  if response.statusCode is 200
+    console.log 'File or directory deleted successfully'
+  else
+    console.log 'Failed to delete file or directory'
+
+getFileSha = (repoName, filePath) ->
+  url = "https://api.github.com/repos/#{repoName}/contents/#{filePath}"
+  response = requests.get url, headers: headers
+
+  if response.statusCode is 200
+    return response.json().sha
+  else
+    console.log 'Failed to get file SHA'
+    return null
